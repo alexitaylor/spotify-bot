@@ -96,41 +96,45 @@ server.route({
         json: true
       };
 
-      req.post(authOptions, function(error, response, body) {
-        if (!error && response.statusCode === 200) {
+      var promise = new Promise(function (resolve) {
+        req.post(authOptions, function(error, response, body) {
+          if (!error && response.statusCode === 200) {
 
-          var access_token = body.access_token,
-            refresh_token = body.refresh_token;
+            var access_token = body.access_token,
+              refresh_token = body.refresh_token;
 
-          var options = {
-            url: 'https://api.spotify.com/v1/me',
-            headers: { 'Authorization': 'Bearer ' + access_token },
-            json: true
-          };
+            var options = {
+              url: 'https://api.spotify.com/v1/me',
+              headers: { 'Authorization': 'Bearer ' + access_token },
+              json: true
+            };
 
-          // use the access token to access the Spotify Web API
-          req.get(options, function(error, response, body) {
-            console.log(body);
-          });
+            // use the access token to access the Spotify Web API
+            req.get(options, function(error, response, body) {
+              console.log(body);
+            });
 
-          // we can also pass the token to the browser to make requests from there
-          console.log('/#' +
-            querystring.stringify({
-              access_token: access_token,
-              refresh_token: refresh_token
-            }))
-          return h.redirect('/#' +
-            querystring.stringify({
-              access_token: access_token,
-              refresh_token: refresh_token
-            }));
-        } else {
-          return h.redirect('/#' +
-            querystring.stringify({
-              error: 'invalid_token'
-            }));
-        }
+            // we can also pass the token to the browser to make requests from there
+            // h.redirect returns a response body that needs to be returned at the end of the handler fn
+            resolve(h.redirect('/#' +
+              querystring.stringify({
+                access_token: access_token,
+                refresh_token: refresh_token
+              })
+            ));
+
+          } else {
+            return h.redirect('/#' +
+              querystring.stringify({
+                error: 'invalid_token'
+              })
+            );
+          }
+        })
       });
+
+      // Each lifecycle method must return a value or a promise that resolves into a value.
+      return promise;
     }
   }
 });
